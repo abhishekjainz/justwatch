@@ -23,12 +23,13 @@ from faunadb.errors import NotFound
 # Fauna Client Config
 client = FaunaClient(secret=FAUNA_KEY)
 
-# Enable logging
+# Enable Logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-    )
-
+)
 logger = logging.getLogger(__name__)
+
+PORT = int(os.environ.get('PORT', '8443'))
 
 COMPANY, DEGREE, COLOUR, MOOD, FINAL, FINAL_2 = range(6)
 GENRE_2 = range(1)
@@ -157,11 +158,11 @@ def degree(update: Update, _: CallbackContext) -> int:
 
 def colour(update: Update, _: CallbackContext) -> int:
     ''' Asks the user for their favourite colour'''
-    reply_keyboard = [['Red', 'Blue', 'Black', 'Green', 'Yellow', 'White', 'Purple', 'No Preference']]
+    reply_keyboard = [['Red', 'Blue', 'Black', 'Green', 'White', 'None']]
     user = update.message.from_user
     logger.info("%s prefers watching a %s degree movie" , user.first_name, update.message.text)
     update.message.reply_text(
-        'What is your favourite colour?',
+        'Which colour do you prefer?',
         reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
     )
     return MOOD
@@ -211,7 +212,7 @@ def final(update: Update, _: CallbackContext) -> int:
             )
         elif update.message.text == 'Cheerful':
             update.message.reply_text(
-                "We reco mmend you: " + recommend_movie('Cheerful') + "!" +
+                "We recommend you: " + recommend_movie('Cheerful') + "!" +
                 " Are you happy with this recommendation?" + " y or n"
             )
         elif update.message.text == 'Stressed':
@@ -280,8 +281,12 @@ def main() -> None:
     dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(conv_handler_2)
 
-    # Start the Bot
     updater.start_polling()
+    updater.start_webhook(listen="0.0.0.0",
+                      port=int(PORT),
+                      url_path=TOKEN,
+                      webhook_url='https://testingml.herokuapp.com/' + TOKEN)
+
     updater.idle()
 
 if __name__ == '__main__':
