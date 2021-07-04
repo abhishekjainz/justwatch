@@ -13,13 +13,31 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import wordnet
 from surprise import Reader, Dataset, SVD
 from surprise.model_selection import cross_validate
+import opendatasets as od
 
 
 import warnings; warnings.simplefilter('ignore')
 
+#Connection to Fauna DB
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+FAUNA_KEY="fnAEMDlAEQACBRgdU1d3dWDNmswtpvVnDF4kERne"
+
+from faunadb import query as q
+from faunadb.client import FaunaClient
+from faunadb.errors import NotFound
+
+# Fauna Client Config
+client = FaunaClient(secret=FAUNA_KEY)
+
+# Downloading Dataset
+od.download("https://www.kaggle.com/rounakbanik/the-movies-dataset")
+
 ## FIRST MODEL: POPULARITY BASED FILTERING
 # This is a pandas built in function to read csv files and output the first 5 rows using "df.head()"
-df = pd.read_csv("~/Desktop/archive/movies_metadata.csv")
+df = pd.read_csv("./the-movies-dataset/movies_metadata.csv")
 df['genres'] = df['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 
 # We first check how many movies have missing values for vote_count & vote_average
@@ -79,7 +97,7 @@ def build_chart(genre, percentile=0.85):
     return qualified
 
 ## SECOND MODEL: CONTENT BASED FILTERING
-links_small = pd.read_csv("~/Desktop/archive/links_small.csv")
+links_small = pd.read_csv("./the-movies-dataset/links_small.csv")
 links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
 df = df.drop([19730, 29503, 35587])
 df['id'] = df['id'].astype('int')
@@ -111,8 +129,8 @@ def get_recommendations(title):
     movie_indices = [i[0] for i in sim_scores]
     return df2['title'].iloc[movie_indices]
 
-credits = pd.read_csv("~/Desktop/archive/credits.csv")
-keywords = pd.read_csv("~/Desktop/archive/keywords.csv")
+credits = pd.read_csv("./the-movies-dataset/credits.csv")
+keywords = pd.read_csv("./the-movies-dataset/keywords.csv")
 keywords['id'] = keywords['id'].astype('int')
 credits['id'] = credits['id'].astype('int')
 
@@ -211,7 +229,7 @@ def improved_recommendations(title):
 
 ## THIRD MODEL: COLLABORATICE FILTERING
 reader = Reader()
-ratings = pd.read_csv("~/Desktop/archive/ratings_small.csv")
+ratings = pd.read_csv("./the-movies-dataset/ratings_small.csv")
 ratings.head()
 
 data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
@@ -274,7 +292,6 @@ list_of_science_fiction = ["Inception", "Interstellar", "Avatar", "The Avengers"
 
 
 def recommend_movie(mood):
-    selector = random.randint(0, 13)
 
     if mood == "Lonely":
         try:
@@ -299,7 +316,7 @@ def recommend_movie(mood):
 
     elif mood == "Excited":
         try:
-            return genre_recommendation('romance') or genre_recommendation('Science Fiction')
+            return genre_recommendation('romance') or genre_recommendation('Fantasy')
         except: 
             title = random.choice(list_of_science_fiction) or random.choice(list_of_romance)
             return title
@@ -342,3 +359,4 @@ def genre_recommendation(genre):
     selector = random.randint(1, 250)
     df = gen_md[gen_md['genre'] == genre]    
     return qualified['title'].iloc[selector]
+
