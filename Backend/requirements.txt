@@ -1,0 +1,12 @@
+python-telegram-bot==12.7
+faunadb
+pandas
+numpy 
+matplotlib
+seaborn
+scipy
+sklearn
+nltk
+surprise
+opendatasets
+python-dotenv
