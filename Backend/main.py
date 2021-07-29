@@ -1,5 +1,6 @@
 import logging
 import random
+
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, ParseMode
 from telegram.ext import (
     Updater,
@@ -19,6 +20,7 @@ from config import *
 from faunadb import query as q
 from faunadb.client import FaunaClient
 from faunadb.errors import NotFound
+
 
 # Fauna Client Config
 client = FaunaClient(secret=FAUNA_KEY)
@@ -79,9 +81,12 @@ def random_rec(update: Update, _: CallbackContext) -> int:
 ###### GENRE RECOMMENDATION ###### 
 def genre(update: Update, _: CallbackContext) -> int:
     ''' Asks User to select a specific Genre'''
+
+    reply_keyboard = [['Comedy', 'Action', 'Romance', 'Science Fiction', 'Horror', 'Animation']]
     user = update.message.from_user
     update.message.reply_text(
-        "From which Genre would you like to watch a movie?"
+        "From which Genre would you like to watch a movie?",
+        reply_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
     )
     return GENRE_2
 
@@ -291,15 +296,6 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-
 
 
 
