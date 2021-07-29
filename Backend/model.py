@@ -248,8 +248,8 @@ def convert_int(x):
         return int(x)
     except:
         return np.nan
-
-id_map = pd.read_csv("~/Desktop/archive/links_small.csv")[['movieId', 'tmdbId']]
+        
+id_map = pd.read_csv("./the-movies-dataset/links_small.csv")[['movieId', 'tmdbId']]
 id_map['tmdbId'] = id_map['tmdbId'].apply(convert_int)
 id_map.columns = ['movieId', 'id']
 id_map = id_map.merge(df2[['title', 'id', 'genres']], on='id').set_index('title')
@@ -355,8 +355,21 @@ def random_recommendation():
     selector = random.randint(1, 250)
     return movies.iloc[selector]
 
-def genre_recommendation(genre):
-    selector = random.randint(1, 250)
-    df = gen_md[gen_md['genre'] == genre]    
-    return qualified['title'].iloc[selector]
+def genre_recommendation(genre, percentile=0.60):
+    selector = random.randint(1, 50)
+    df = gen_md[gen_md['genre'] == genre]
+    vote_counts = df[df['vote_count'].notnull()]['vote_count'].astype('int')
+    vote_averages = df[df['vote_average'].notnull()]['vote_average'].astype('int')
+    C = vote_averages.mean()
+    m = vote_counts.quantile(percentile)
+    
+    qualified = df[(df['vote_count'] >= m) & (df['vote_count'].notnull()) & (df['vote_average'].notnull())][['title', 'year', 'vote_count', 'vote_average', 'popularity']]
+    qualified['vote_count'] = qualified['vote_count'].astype('int')
+    qualified['vote_average'] = qualified['vote_average'].astype('int')
+    
+    qualified['wr'] = qualified.apply(lambda x: (x['vote_count']/(x['vote_count']+m) * x['vote_average']) + (m/(m+x['vote_count']) * C), axis=1)
+    qualified = qualified.sort_values('wr', ascending=False).head(250)
+    
+    return qualified.sample()['title']
+
 
